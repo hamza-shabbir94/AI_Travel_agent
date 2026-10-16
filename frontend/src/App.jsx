@@ -14,6 +14,14 @@ const IDEAS = [
   "Weekend in Berlin, nightlife, €200",
 ];
 
+// Options for the trip form
+const INTERESTS = [
+  "Food & wine", "Art & culture", "Nature", "Coast & beaches",
+  "Nightlife", "Design & shops", "Architecture", "Local life",
+];
+const STYLES = ["Budget", "Mid-range", "Luxury"];
+const DAYS = Array.from({ length: 14 }, (_, i) => i + 1);   // 1 to 14 days
+
 const FIRST_MESSAGE = { role: "assistant", text: GREETING };
 
 export default function App() {
@@ -27,10 +35,17 @@ export default function App() {
 
   const isNewTrip = messages.length === 1;
 
-  // Scroll to the newest message
+  // Scroll to the newest message. A new plan is shown from its top (cover + title).
   const bottomRef = useRef(null);
   useEffect(() => {
-    if (!isNewTrip) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (isNewTrip) return;
+    const last = messages[messages.length - 1];
+    if (last.isPlan && !loading) {
+      const plans = document.querySelectorAll(".postcard");
+      plans[plans.length - 1]?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages, loading, isNewTrip]);
 
   // --- Send a message to the backend ---
@@ -158,15 +173,17 @@ export default function App() {
 // Small building blocks
 // ------------------------------------------------------------------
 
-// First screen: big question + trip ideas
+// First screen: big question + trip form + trip ideas
 function Welcome({ onPick }) {
   return (
     <section className="welcome">
       <h1>Where to next?</h1>
       <p>
-        Tell me a place, how many days, and what you enjoy. I'll check the
-        weather, ask what's missing, and draw up your trip day by day.
+        Fill in a few details and I'll draw up your trip day by day, with the
+        weather and a budget. Prefer to talk? Type in the chat below.
       </p>
+      <TripForm onSubmit={onPick} />
+      <p className="or">Or start from an idea:</p>
       <div className="ideas">
         {IDEAS.map((idea) => (
           <button key={idea} className="idea" onClick={() => onPick(idea)}>
@@ -178,11 +195,131 @@ function Welcome({ onPick }) {
   );
 }
 
+// The trip form: turns the choices into one message for the advisor
+function TripForm({ onSubmit }) {
+  const [destination, setDestination] = useState("");
+  const [days, setDays] = useState(3);
+  const [style, setStyle] = useState("Mid-range");
+  const [startDate, setStartDate] = useState("");
+  const [budget, setBudget] = useState("");
+  const [interests, setInterests] = useState([]);
+  const [details, setDetails] = useState("");
+
+  // Add or remove an interest when its chip is clicked
+  function toggle(interest) {
+    setInterests((old) =>
+      old.includes(interest) ? old.filter((x) => x !== interest) : [...old, interest]
+    );
+  }
+
+  const ready = destination.trim() !== "" && interests.length > 0;
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    if (!ready) return;
+
+    // Build one clear message from the form
+    const lines = [
+      `Plan a ${days}-day trip to ${destination.trim()}.`,
+      `Interests: ${interests.join(", ")}.`,
+      `Travel style: ${style}.`,
+    ];
+    if (startDate) lines.push(`Start date: ${startDate}.`);
+    if (budget.trim()) lines.push(`Budget per person: ${budget.trim()}.`);
+    if (details.trim()) lines.push(`More details: ${details.trim()}`);
+    onSubmit(lines.join("\n"));
+  }
+
+  return (
+    <form className="trip-form" onSubmit={handleSubmit}>
+      <label className="field wide">
+        <span>Destination</span>
+        <input
+          value={destination}
+          onChange={(e) => setDestination(e.target.value)}
+          placeholder="Lisbon, Japan, the Scottish Highlands…"
+          required
+        />
+      </label>
+
+      <label className="field">
+        <span>Days</span>
+        <select value={days} onChange={(e) => setDays(Number(e.target.value))}>
+          {DAYS.map((d) => (
+            <option key={d} value={d}>
+              {d} {d === 1 ? "day" : "days"}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="field">
+        <span>Travel style</span>
+        <select value={style} onChange={(e) => setStyle(e.target.value)}>
+          {STYLES.map((s) => (
+            <option key={s}>{s}</option>
+          ))}
+        </select>
+      </label>
+
+      <label className="field">
+        <span>
+          Start date <em>optional</em>
+        </span>
+        <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+      </label>
+
+      <label className="field">
+        <span>
+          Budget per person <em>optional</em>
+        </span>
+        <input
+          value={budget}
+          onChange={(e) => setBudget(e.target.value)}
+          placeholder="e.g. 400 EUR"
+        />
+      </label>
+
+      <fieldset className="field wide">
+        <legend>What do you enjoy? Pick at least one.</legend>
+        <div className="interests">
+          {INTERESTS.map((interest) => (
+            <label key={interest} className="interest">
+              <input
+                type="checkbox"
+                checked={interests.includes(interest)}
+                onChange={() => toggle(interest)}
+              />
+              <span>{interest}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <label className="field wide">
+        <span>
+          Anything else? <em>optional</em>
+        </span>
+        <textarea
+          rows={2}
+          value={details}
+          onChange={(e) => setDetails(e.target.value)}
+          placeholder="Who's travelling, dietary needs, places to avoid…"
+        />
+      </label>
+
+      <button type="submit" className="primary wide" disabled={!ready}>
+        Plan my trip
+      </button>
+    </form>
+  );
+}
+
 // A normal chat message (assistant, user or error)
 function Bubble({ message }) {
   return (
     <div className={`bubble ${message.role}`}>
-      <ReactMarkdown>{message.text}</ReactMarkdown>
+      <ReactMarkdown>{message.role === "user" ? message.text.replaceAll("\n", "  \n") : message.text}</ReactMarkdown>
       <Steps steps={message.steps} />
     </div>
   );

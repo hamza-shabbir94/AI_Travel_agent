@@ -50,7 +50,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-button, input { font: inherit; color: inherit; }
+button, input, select, textarea { font: inherit; color: inherit; }
 
 .app {
   max-width: 760px;
@@ -148,13 +148,13 @@ button, input { font: inherit; color: inherit; }
 .ghost:hover { border-color: var(--airmail-blue); }
 
 button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
-button:focus-visible, input:focus-visible {
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
   outline: 2px solid var(--airmail-blue);
   outline-offset: 2px;
 }
 
 /* ---------- First screen ---------- */
-.welcome { padding: 9vh 0 4vh; }
+.welcome { padding: 6vh 0 4vh; }
 
 .welcome h1 {
   font-family: var(--font-display);
@@ -172,7 +172,86 @@ button:focus-visible, input:focus-visible {
   margin: 0 0 28px;
 }
 
+.or { font-size: 0.95rem; margin: 26px 0 10px; }
+
 .ideas { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* ---------- Trip form ---------- */
+.trip-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 14px;
+  background: var(--card);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  padding-top: 30px;
+}
+/* Airmail edge along the top of the form */
+.trip-form::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 6px;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--airmail-red) 0 10px,
+    var(--card) 10px 15px,
+    var(--airmail-blue) 15px 25px,
+    var(--card) 25px 30px
+  );
+}
+.trip-form .wide { grid-column: 1 / -1; }
+
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; border: 0; padding: 0; margin: 0; }
+.field > span, .field legend { font-size: 0.9rem; font-weight: 600; padding: 0; }
+.field em { font-style: normal; font-weight: 400; color: var(--ink-soft); margin-left: 4px; }
+.field legend { margin-bottom: 8px; }
+
+.field input, .field select, .field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  font-size: 1rem;
+}
+.field textarea { resize: vertical; }
+
+/* Interest chips: a checkbox dressed as a pill */
+.interests { display: flex; flex-wrap: wrap; gap: 8px; }
+.interest input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.interest span {
+  display: inline-block;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  font-size: 0.92rem;
+  cursor: pointer;
+  user-select: none;
+}
+.interest span:hover { border-color: var(--airmail-blue); }
+.interest input:checked + span {
+  background: var(--airmail-blue);
+  border-color: var(--airmail-blue);
+  color: #fff;
+}
+.interest input:focus-visible + span { outline: 2px solid var(--airmail-blue); outline-offset: 2px; }
+
+.primary {
+  border: none;
+  border-radius: 14px;
+  padding: 14px 18px;
+  background: var(--ink);
+  color: var(--on-ink);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.primary:not(:disabled):hover { background: var(--airmail-blue); color: #fff; }
 
 .idea {
   border: 1px dashed var(--airmail-blue);
@@ -242,6 +321,7 @@ button:focus-visible, input:focus-visible {
 
 /* ---------- The travel plan: a postcard with a route ---------- */
 .postcard {
+  scroll-margin-top: 20px;   /* room for the airmail stripe when scrolled to */
   background: var(--card);
   border-radius: 20px;
   box-shadow: var(--shadow);
@@ -405,4 +485,5 @@ button:focus-visible, input:focus-visible {
   .postcard-body { padding: 20px 18px 18px; }
   .bubble { max-width: 92%; }
   .welcome { padding-top: 5vh; }
+  .trip-form { grid-template-columns: 1fr; padding: 18px; }
 }
